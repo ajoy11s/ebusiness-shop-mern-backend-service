@@ -149,11 +149,11 @@ async function run() {
     app.get("/get_single_product_by_id/:_id", async (req, res) => {
       const _id = req.params._id; // Get _id from the URL
       const query = { _id: new ObjectId(_id) }; // Create a query object
-    
+
       try {
         const tbladdproduct = database.collection("tbladdproduct");
         const result = await tbladdproduct.findOne(query);
-    
+
         if (result) {
           res.send(result); // Send the found product
         } else {
@@ -164,7 +164,7 @@ async function run() {
         res.status(500).send({ message: "Internal server error" });
       }
     });
-  
+
     const tbladdcategory = database.collection("tbladdcategory");
     app.post("/dashboard_add_categorylist", async (req, res) => {
       const categorylist = req.body;
@@ -185,13 +185,46 @@ async function run() {
       res.send(result);
     });
 
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    //await client.close();
-  }
+    app.get("/get_all_customer_buy_data/:email", async (req, res) => {
+      try {
+        const email = req.params.email;
+        const query = { email: email };
+        const result = await database.collection("tblbuyproductcustomer").find(query).toArray();
+        //const result = await query.toArray();
+        if (result) {
+          res.send(result);
+        } else {
+          res.status(404).send({ message: "Products not found" });
+        }
+      } catch (error) {
+        console.error(error);
+        res.status(500).send({ message: error });
+      }
+    });
+
+  //   app.get("/get_all_customer_buy_data", async (req, res) => {
+  //     const query = { category_id: category_id };
+  //     const result = await database.collection("tbladdproduct").find(query).toArray();
+  //     //const result = await query.toArray();
+  //     if (result) {
+  //       res.send(result);
+  //     } else {
+  //       res.status(404).send({ message: "Products not found" });
+  //     }
+  //   } catch (error) {
+  //     console.error(error);
+  //     res.status(500).send({ message: error });
+  //   }
+  // });
+
+
+  // Send a ping to confirm a successful connection
+  await client.db("admin").command({ ping: 1 });
+  console.log("Pinged your deployment. You successfully connected to MongoDB!");
+} finally {
+  // Ensures that the client will close when you finish/error
+  //await client.close();
+}
 }
 run().catch((error) => {
   console.log(error);
