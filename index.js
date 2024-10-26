@@ -14,9 +14,9 @@ app.use(express.json());
 //mongoDB Code added with function
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const { error } = require('console');
-//const uri = `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_PASSWORD}@cluster0.q2fr3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+
 const URI = process.env.MONGO_URI;
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+
 const client = new MongoClient(URI, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -29,7 +29,7 @@ const client = new MongoClient(URI, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    //await client.connect();
 
     const database = client.db("ebusiness_shop_dbuser");
 
@@ -76,7 +76,6 @@ async function run() {
       const email = req.params.email;
       const { name, tel, address } = req.body;
 
-      // Validate parameters (you can use a library like Joi for more complex validation)
       if (!email || !name || !tel || !address) {
         return res.status(400).send({ message: 'All fields are required.' });
       }
@@ -134,7 +133,6 @@ async function run() {
         const category_id = req.params.category_id;
         const query = { category_id: category_id };
         const result = await database.collection("tbladdproduct").find(query).toArray();
-        //const result = await query.toArray();
         if (result) {
           res.send(result);
         } else {
@@ -147,15 +145,15 @@ async function run() {
     });
 
     app.get("/get_single_product_by_id/:_id", async (req, res) => {
-      const _id = req.params._id; // Get _id from the URL
-      const query = { _id: new ObjectId(_id) }; // Create a query object
+      const id = req.params._id;
+      const query = { _id: new ObjectId(id) };
 
       try {
         const tbladdproduct = database.collection("tbladdproduct");
         const result = await tbladdproduct.findOne(query);
 
         if (result) {
-          res.send(result); // Send the found product
+          res.send(result);
         } else {
           res.status(404).send({ message: "Product not found" });
         }
@@ -170,7 +168,7 @@ async function run() {
       const id = req.params._id;
       const { product_name, product_details, product_price } = req.body;
 
-      // Validate parameters (you can use a library like Joi for more complex validation)
+
       if (!product_name || !id || !product_details || !product_price) {
         return res.status(400).send({ message: 'All fields are required.' });
       }
@@ -186,12 +184,9 @@ async function run() {
         },
       };
 
-      console.log(updatedProduct);
-
       try {
         const result = await tbladdproduct.updateOne(filter, updatedProduct, options);
 
-        // Check if the update was successful
         if (result.modifiedCount === 0 && result.upsertedCount === 0) {
           return res.status(404).send({ message: 'Product not found and no update was made.' });
         }
@@ -218,12 +213,11 @@ async function run() {
     });
 
 
-    
+
     app.put('/update_category_data/:_id', async (req, res) => {
       const id = req.params._id;
       const { category_name } = req.body;
 
-      // Validate parameters (you can use a library like Joi for more complex validation)
       if (!category_name || !id) {
         return res.status(400).send({ message: 'All fields are required.' });
       }
@@ -240,7 +234,6 @@ async function run() {
       try {
         const result = await tbladdcategory.updateOne(filter, updatedCategory, options);
 
-        // Check if the update was successful
         if (result.modifiedCount === 0 && result.upsertedCount === 0) {
           return res.status(404).send({ message: 'Category not found and no update was made.' });
         }
@@ -254,23 +247,23 @@ async function run() {
 
     app.delete('/delete_category_data/:_id', async (req, res) => {
       const id = req.params._id;
-  
+
       try {
-          const result = await tbladdcategory.findByIdAndUpdate(
-              id,
-              { isdelete: true }, // Mark as deleted
-              { new: true }
-          );
-  
-          if (!result) {
-              return res.status(404).send({ message: 'Item not found' });
-          }
-          res.send({ message: 'Item marked as deleted successfully' });
+        const result = await tbladdcategory.findByIdAndUpdate(
+          id,
+          { isdelete: true },
+          { new: true }
+        );
+
+        if (!result) {
+          return res.status(404).send({ message: 'Item not found' });
+        }
+        res.send({ message: 'Item marked as deleted successfully' });
       } catch (error) {
-          console.error('Error deleting item:', error);
-          res.status(500).send({ message: 'Error deleting item', error });
+        console.error('Error deleting item:', error);
+        res.status(500).send({ message: 'Error deleting item', error });
       }
-  });
+    });
 
 
     const tblbuyproductcustomer = database.collection("tblbuyproductcustomer");
@@ -285,7 +278,6 @@ async function run() {
         const email = req.params.email;
         const query = { email: email };
         const result = await database.collection("tblbuyproductcustomer").find(query).toArray();
-        //const result = await query.toArray();
         if (result) {
           res.send(result);
         } else {
@@ -297,29 +289,9 @@ async function run() {
       }
     });
 
-  //   app.get("/get_all_customer_buy_data", async (req, res) => {
-  //     const query = { category_id: category_id };
-  //     const result = await database.collection("tbladdproduct").find(query).toArray();
-  //     //const result = await query.toArray();
-  //     if (result) {
-  //       res.send(result);
-  //     } else {
-  //       res.status(404).send({ message: "Products not found" });
-  //     }
-  //   } catch (error) {
-  //     console.error(error);
-  //     res.status(500).send({ message: error });
-  //   }
-  // });
+  } finally {
 
-
-  // Send a ping to confirm a successful connection
-  await client.db("admin").command({ ping: 1 });
-  console.log("Pinged your deployment. You successfully connected to MongoDB!");
-} finally {
-  // Ensures that the client will close when you finish/error
-  //await client.close();
-}
+  }
 }
 run().catch((error) => {
   console.log(error);
@@ -331,9 +303,6 @@ app.get('/', (req, res) => {
   res.send('Hello World!')
 })
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
 
 app.use('/functions/api', router);
 
