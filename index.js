@@ -165,6 +165,45 @@ async function run() {
       }
     });
 
+
+    app.put('/update_product_data/:_id', async (req, res) => {
+      const id = req.params._id;
+      const { product_name, product_details, product_price } = req.body;
+
+      // Validate parameters (you can use a library like Joi for more complex validation)
+      if (!product_name || !id || !product_details || !product_price) {
+        return res.status(400).send({ message: 'All fields are required.' });
+      }
+
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+
+      const updatedProduct = {
+        $set: {
+          product_name: product_name,
+          product_details: product_details,
+          product_price: product_price
+        },
+      };
+
+      console.log(updatedProduct);
+
+      try {
+        const result = await tbladdproduct.updateOne(filter, updatedProduct, options);
+
+        // Check if the update was successful
+        if (result.modifiedCount === 0 && result.upsertedCount === 0) {
+          return res.status(404).send({ message: 'Product not found and no update was made.' });
+        }
+
+        res.send({ message: 'Product updated successfully', result });
+      } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).send({ message: 'Internal server error' });
+      }
+    });
+
+
     const tbladdcategory = database.collection("tbladdcategory");
     app.post("/dashboard_add_categorylist", async (req, res) => {
       const categorylist = req.body;
@@ -177,6 +216,62 @@ async function run() {
       const result = await query.toArray();
       res.send(result);
     });
+
+
+    
+    app.put('/update_category_data/:_id', async (req, res) => {
+      const id = req.params._id;
+      const { category_name } = req.body;
+
+      // Validate parameters (you can use a library like Joi for more complex validation)
+      if (!category_name || !id) {
+        return res.status(400).send({ message: 'All fields are required.' });
+      }
+
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+
+      const updatedCategory = {
+        $set: {
+          category_name: category_name
+        },
+      };
+
+      try {
+        const result = await tbladdcategory.updateOne(filter, updatedCategory, options);
+
+        // Check if the update was successful
+        if (result.modifiedCount === 0 && result.upsertedCount === 0) {
+          return res.status(404).send({ message: 'Category not found and no update was made.' });
+        }
+
+        res.send({ message: 'Category updated successfully', result });
+      } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).send({ message: 'Internal server error' });
+      }
+    });
+
+    app.delete('/delete_category_data/:_id', async (req, res) => {
+      const id = req.params._id;
+  
+      try {
+          const result = await tbladdcategory.findByIdAndUpdate(
+              id,
+              { isdelete: true }, // Mark as deleted
+              { new: true }
+          );
+  
+          if (!result) {
+              return res.status(404).send({ message: 'Item not found' });
+          }
+          res.send({ message: 'Item marked as deleted successfully' });
+      } catch (error) {
+          console.error('Error deleting item:', error);
+          res.status(500).send({ message: 'Error deleting item', error });
+      }
+  });
+
 
     const tblbuyproductcustomer = database.collection("tblbuyproductcustomer");
     app.post("/customer_add_buy_product", async (req, res) => {
