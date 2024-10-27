@@ -1,13 +1,19 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+
 const app = express();
-//const serverless = require('serverless-http');
-//const router = express.Router();
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 
 const port = process.env.PORT || 5000;
 
 app.use(cors());
+// app.use(cors({
+//   origin: 'https://ebusiness-shop-mern.web.app',
+//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// }));
 app.use(express.json());
 
 
@@ -288,6 +294,32 @@ async function run() {
         res.status(500).send({ message: error });
       }
     });
+
+
+    //Start image upload on clounary server
+    // Cloudinary configuration
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+
+    // Set up multer for file uploads
+    const storage = multer.memoryStorage();
+    const upload = multer({ storage });
+
+    app.post('/upload', upload.single('file'), async (req, res) => {
+      try {
+        const result = await cloudinary.uploader.upload_stream()(req.file.buffer);
+        res.status(200).json({ url: result.secure_url });
+      } catch (error) {
+        res.status(500).json({ error: 'Upload failed' });
+      }
+    });
+
+    //End image upload on cloudnary server
+
+
 
   } finally {
 
