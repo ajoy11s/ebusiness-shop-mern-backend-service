@@ -311,3 +311,4 @@ app.get('/', (req, res) => {
 //app.use('/functions/api', router);
 
 //module.exports.handler = serverless(app);
+module.exports = app;
