@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 //const serverless = require('serverless-http');
-const router = express.Router();
+//const router = express.Router();
 
 const port = process.env.PORT || 5000;
 
