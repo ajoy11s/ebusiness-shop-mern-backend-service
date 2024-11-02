@@ -9,11 +9,6 @@ const cloudinary = require('cloudinary').v2;
 const port = process.env.PORT || 5000;
 
 app.use(cors());
-// app.use(cors({
-//   origin: 'https://ebusiness-shop-mern.web.app',
-//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-//   allowedHeaders: ['Content-Type', 'Authorization']
-// }));
 app.use(express.json());
 
 
@@ -112,6 +107,35 @@ async function run() {
       }
     });
 
+    app.put('/update_user_role/:email', async (req, res) => {
+      const email = req.params.email;
+      const { isadmin, isgeneraluser } = req.body;
+
+      const filter = { email: email };
+      const options = { upsert: true };
+
+      const updatedUser = {
+        $set: {
+          isadmin: isadmin,
+          isgeneraluser: isgeneraluser
+        },
+      };
+
+      try {
+        const result = await tblregisteruseradd.updateOne(filter, updatedUser, options);
+
+        // Check if the update was successful
+        if (result.modifiedCount === 0 && result.upsertedCount === 0) {
+          return res.status(404).send({ message: 'User not found and no update was made.' });
+        }
+
+        res.send({ message: 'User updated successfully', result });
+      } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).send({ message: 'Internal server error' });
+      }
+    });
+
     const tbladdproduct = database.collection("tbladdproduct");
     app.post("/dashboard_add_product", async (req, res) => {
       const productlist = req.body;
@@ -135,19 +159,52 @@ async function run() {
     });
 
     app.get("/get_all_product_data_by_categoryid/:category_id", async (req, res) => {
+      // try {
+      //   const category_id = req.params.category_id;
+      //   const query = { category_id: category_id };
+      //   const result = await database.collection("tbladdproduct").find(query).toArray();
+      //   if (result) {
+      //     res.send(result);
+      //   } else {
+      //     res.status(404).send({ message: "Products not found" });
+      //   }
+      // } catch (error) {
+      //   console.error(error);
+      //   res.status(500).send({ message: error });
+      // }
+
       try {
-        const category_id = req.params.category_id;
-        const query = { category_id: category_id };
-        const result = await database.collection("tbladdproduct").find(query).toArray();
-        if (result) {
-          res.send(result);
-        } else {
-          res.status(404).send({ message: "Products not found" });
-        }
+        const tblbuyproductcustomer = database.collection('tblbuyproductcustomer');
+        const tbladdproduct = database.collection('tbladdproduct');
+
+
+        const averageRatings = await tblbuyproductcustomer.aggregate([
+          {
+            $group: {
+              _id: "$product_id",
+              averageRating: { $avg: { $toDouble: '$rating' } }
+            }
+          }
+        ]).toArray();
+
+        const avgRatingsMap = {};
+        averageRatings.forEach(item => {
+          avgRatingsMap[item._id] = item.averageRating;
+        });
+
+        const products = await tbladdproduct.find().toArray();
+
+        const result = products.map(product => ({
+          ...product,
+          averageRating: avgRatingsMap[product._id] || null
+        }));
+
+        res.json(result);
       } catch (error) {
-        console.error(error);
-        res.status(500).send({ message: error });
+        console.error("Error fetching products with ratings:", error);
+        res.status(500).json({ message: "Internal server error" });
       }
+
     });
 
     app.get("/get_single_product_by_id/:_id", async (req, res) => {
@@ -204,6 +261,23 @@ async function run() {
       }
     });
 
+    app.delete('/delete_product_data/:_id', async (req, res) => {
+      const id = req.params._id;
+
+      try {
+        const result = await tbladdproduct.deleteOne({ _id: new ObjectId(id) });
+
+        if (result.deletedCount === 0) {
+          return res.status(404).send({ message: 'Item not found' });
+        }
+
+        res.send({ message: 'Item deleted successfully' });
+      } catch (error) {
+        console.error('Error deleting item:', error);
+        res.status(500).send({ message: 'Error deleting item', error });
+      }
+    });
+
 
     const tbladdcategory = database.collection("tbladdcategory");
     app.post("/dashboard_add_categorylist", async (req, res) => {
@@ -255,16 +329,13 @@ async function run() {
       const id = req.params._id;
 
       try {
-        const result = await tbladdcategory.findByIdAndUpdate(
-          id,
-          { isdelete: true },
-          { new: true }
-        );
+        const result = await tbladdcategory.deleteOne({ _id: new ObjectId(id) });
 
-        if (!result) {
+        if (result.deletedCount === 0) {
           return res.status(404).send({ message: 'Item not found' });
         }
-        res.send({ message: 'Item marked as deleted successfully' });
+
+        res.send({ message: 'Item deleted successfully' });
       } catch (error) {
         console.error('Error deleting item:', error);
         res.status(500).send({ message: 'Error deleting item', error });
@@ -295,6 +366,72 @@ async function run() {
       }
     });
 
+    app.put('/update__buyer_product_rating/:_id', async (req, res) => {
+      const id = req.params._id;
+      const { rating } = req.body;
+
+
+      if (!rating) {
+        return res.status(400).send({ message: 'All fields are required.' });
+      }
+
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+
+      const updatedProduct = {
+        $set: {
+          rating: rating
+        },
+      };
+
+      try {
+        const result = await tblbuyproductcustomer.updateOne(filter, updatedProduct, options);
+
+        if (result.modifiedCount === 0 && result.upsertedCount === 0) {
+          return res.status(404).send({ message: 'Product not found and no update was made.' });
+        }
+
+        res.send({ message: 'Rating successfully', result });
+      } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).send({ message: 'Internal server error' });
+      }
+    });
+
+
+    app.get('/products-with-ratings', async (req, res) => {
+      try {
+        const tblbuyproductcustomer = database.collection('tblbuyproductcustomer');
+        const tbladdproduct = database.collection('tbladdproduct');
+
+
+        const averageRatings = await tblbuyproductcustomer.aggregate([
+          {
+            $group: {
+              _id: "$product_id",
+              averageRating: { $avg: { $toDouble: '$rating' } }
+            }
+          }
+        ]).toArray();
+
+        const avgRatingsMap = {};
+        averageRatings.forEach(item => {
+          avgRatingsMap[item._id] = item.averageRating;
+        });
+
+        const products = await tbladdproduct.find().toArray();
+
+        const result = products.map(product => ({
+          ...product,
+          averageRating: avgRatingsMap[product._id] || null
+        }));
+
+        res.json(result);
+      } catch (error) {
+        console.error("Error fetching products with ratings:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    });
 
     //Start image upload on clounary server
     // Cloudinary configuration
@@ -340,7 +477,4 @@ app.get('/', (req, res) => {
 // })
 
 
-//app.use('/functions/api', router);
-
-//module.exports.handler = serverless(app);
 module.exports = app;
