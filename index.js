@@ -6,7 +6,7 @@ const app = express();
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -174,9 +174,7 @@ async function run() {
       // }
 
       try {
-        const tblbuyproductcustomer = database.collection('tblbuyproductcustomer');
-        const tbladdproduct = database.collection('tbladdproduct');
-
+        const tblbuyproductcustomer = await database.collection('tblbuyproductcustomer');
 
         const averageRatings = await tblbuyproductcustomer.aggregate([
           {
@@ -192,7 +190,9 @@ async function run() {
           avgRatingsMap[item._id] = item.averageRating;
         });
 
-        const products = await tbladdproduct.find().toArray();
+        const category_id = req.params.category_id;
+        const query = { category_id: category_id };
+        const products = await database.collection('tbladdproduct').find(query).toArray();
 
         const result = products.map(product => ({
           ...product,
