@@ -468,6 +468,69 @@ run().catch((error) => {
 
 //mongoDB Code end with function
 
+// Your SSLCOMMERZ Sandbox credentials
+
+const SSLCommerzPayment = require('sslcommerz-lts');
+const store_id =  process.env.STORE_ID;
+const store_passwd =  process.env.STORE_PASSWORD;
+const is_live = false;
+
+app.post('/initiate-payment', async (req, res) => {
+
+  const data = {
+    total_amount: req.body.totalAmount,
+    currency: 'BDT',
+    tran_id: req.body.tran_id,
+    success_url: req.body.successUrl,
+    fail_url: req.body.failUrl,
+    cancel_url: req.body.cancelUrl,
+    ipn_url:  req.body.ipn_url,
+    shipping_method: req.body.shipping_method,
+    product_name: req.body.product_name,
+    product_category: req.body.product_category,
+    product_profile: 'general',
+    cus_name: req.body.cusName,
+    cus_email: req.body.cusEmail,
+    cus_phone: req.body.cusPhone,
+    cus_address: req.body.cusAddress,
+    cus_city: req.body.cusCity,
+    cus_state: req.body.cusState,
+    cus_postcode: req.body.cusPostcode,
+    cus_country: req.body.cusCountry,
+    cus_fax: '01000000000',
+    ship_name: req.body.cusName,
+    ship_add1: req.body.cusAddress,
+    ship_add2: req.body.cusAddress,
+    ship_city: req.body.cusAddress,
+    ship_state: req.body.cusAddress,
+    ship_postcode: req.body.cusPostcode,
+    ship_country: 'Bangladesh',
+  };
+  const sslcz = new SSLCommerzPayment(store_id, store_passwd, is_live)
+  sslcz.init(data).then(apiResponse => {
+    let GatewayPageURL = apiResponse.GatewayPageURL
+    res.send({
+      url: GatewayPageURL
+    });
+    //console.log('Redirecting to: ', GatewayPageURL)
+  });
+
+});
+
+app.get("/payment_online/success/:tran_id", async (req, res) => {
+  try {
+    const tran_id = req.params.tran_id;
+    //console.log(tran_id);
+   
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: error });
+  }
+});
+
+
+
+
 app.get('/', (req, res) => {
   res.send('Hello World!')
 })
