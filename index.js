@@ -471,8 +471,8 @@ run().catch((error) => {
 // Your SSLCOMMERZ Sandbox credentials
 
 const SSLCommerzPayment = require('sslcommerz-lts');
-const store_id =  process.env.STORE_ID;
-const store_passwd =  process.env.STORE_PASSWORD;
+const store_id = process.env.STORE_ID;
+const store_passwd = process.env.STORE_PASSWORD;
 const is_live = false;
 
 app.post('/initiate-payment', async (req, res) => {
@@ -484,7 +484,7 @@ app.post('/initiate-payment', async (req, res) => {
     success_url: req.body.successUrl,
     fail_url: req.body.failUrl,
     cancel_url: req.body.cancelUrl,
-    ipn_url:  req.body.ipn_url,
+    ipn_url: req.body.ipn_url,
     shipping_method: req.body.shipping_method,
     product_name: req.body.product_name,
     product_category: req.body.product_category,
@@ -517,18 +517,90 @@ app.post('/initiate-payment', async (req, res) => {
 
 });
 
-app.get("/payment_online/success/:tran_id", async (req, res) => {
+app.post("/payment_online/success/:tran_id", async (req, res) => {
   try {
     const tran_id = req.params.tran_id;
-    //console.log(tran_id);
-   
+    if (tran_id) {
+      res.send(`
+        <html>
+          <head>
+            <title>Payment Confirmation</title>
+            <style>
+            body {
+              font-family: Arial, sans-serif;
+            }
+            h1 {
+              color: green;
+            }
+          </style>
+          </head>
+          <body>
+            <h1>Payment successfully done!</h1>
+            <p>Your transaction number is: <strong>${tran_id}</strong></p>
+          </body>
+        </html>
+      `);
+    }
+
   } catch (error) {
     console.error(error);
     res.status(500).send({ message: error });
   }
 });
 
+app.post("/payment_online/fail", async (req, res) => {
+  try {
+    res.send(`
+        <html>
+          <head>
+            <title>Payment Fail</title>
+            <style>
+            body {
+              font-family: Arial, sans-serif;
+            }
+            h1 {
+              color: red;
+            }
+          </style>
+          </head>
+          <body>
+            <h1>Your payment failed!</h1>
+          </body>
+        </html>
+      `);
 
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: error });
+  }
+});
+
+app.post("/payment_online/cancel", async (req, res) => {
+  try {
+    res.send(`
+        <html>
+          <head>
+            <title>Payment Cancel</title>
+            <style>
+              body {
+                font-family: Arial, sans-serif;
+              }
+              h1 {
+                color: red;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Your payment Cancel!</h1>
+          </body>
+        </html>
+      `);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ message: error });
+  }
+});
 
 
 app.get('/', (req, res) => {
